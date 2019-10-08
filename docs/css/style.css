@@ -1,10 +1,25 @@
+body{
+  background-color: #030e4a;
+}
+
 .headerBar{
   text-align: center;
 }
 
+#title{
+  color: white;
+  font-style: italic;
+  font-size: 3em;
+}
+
 .maincontent {
-  margin: 1em;
+  margin: -1em;
   align-content: center;
+  background-color: yellow;
+}
+
+.buffer{
+  padding: 1em;
 }
 
 #canvas{
@@ -12,4 +27,39 @@
   margin-left: auto;
   margin-right: auto;
   background-color: #000000;
+  border-radius: 12px;
+}
+
+.buttons{
+  align-content: center;
+}
+
+.buttons button{
+  font-size: 2em;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+#playButton{
+  background-color: black;
+  color: white;
+  float:left;
+  margin-left: 4em;
+}
+
+#stopButton{
+  background-color: white;
+  border: 1px solid black;
+  color:black;
+  float: right;
+  margin-right: 4em;
+}
+
+.footer .buffer{
+  padding: 3em;
+}
+
+.footer h4{
+  color: white;
+  float: none;
 }
