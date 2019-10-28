@@ -53,6 +53,7 @@ var map = [
     //30
   [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]
 ];
+var count;
 
 //log when images are loaded
 pacman.onload = function(){console.log("pacman loaded");};
@@ -131,7 +132,7 @@ window.addEventListener('keydown', function(e){
   if([32,37,38,39,40].indexOf(e.keyCode) > -1){
     e.preventDefault();
   }
-  
+
 }, false);
 
 window.addEventListener('keyup', function(e){
@@ -163,6 +164,7 @@ window.addEventListener('keyup', function(e){
 function eat(map,x,y){
   if(map[x][y] == 1){
     map[x][y] = 0;
+    count -= 1;
     score += 1;
   }
   else if(map[x][y] == 2){
@@ -228,6 +230,7 @@ function resetBoard(){
       //30
     [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]
   ];
+  count = 240;
 
   //ghost (x,y)
   ghostBx = 11;
@@ -263,13 +266,16 @@ document.getElementById("playButton").onclick = function(){
   }
 }
 
-document.getElementById("stopButton").onclick = function(){
+document.getElementById("stopButton").onclick = endGame;
+
+//end game function
+function endGame(){
   if(!menu && !end){
     menu = true;
     end = true;
     context.clearRect(0,0,canvas.width,canvas.height);
     drawBoard(map);
-    context.fillText("Score: "+score, 380,360);
+    context.fillText("Score: "+score, 360,360);
     resetScore();
   }
 }
@@ -323,6 +329,10 @@ function draw(){
 
       moving += 1;
       anim += 1;
+
+      console.log(count);
+      if(count <= 0)
+        endGame();
 
       if(end) return;
       requestAnimationFrame(draw);
