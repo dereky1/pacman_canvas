@@ -8,6 +8,7 @@ var ghostB = new Image();
 var ghostR = new Image();
 var ghostP = new Image();
 var ghostO = new Image();
+var ghostScared = new Image();
 var pacmanclosed = new Image();
 var food = new Image();
 var power = new Image();
@@ -62,6 +63,7 @@ ghostB.onload = function(){console.log("ghostB loaded");};
 ghostR.onload = function(){console.log("ghostR loaded");};
 ghostP.onload = function(){console.log("ghostP loaded");};
 ghostO.onload = function(){console.log("ghostO loaded");};
+ghostScared.onload = function(){console.log("scaredGhost loaded");};
 food.onload = function(){console.log("food loaded");};
 power.onload = function(){console.log("power loaded");};
 block.onload = function(){console.log("block loaded");};
@@ -73,32 +75,43 @@ ghostB.src = "images/ghost.png";
 ghostR.src = "images/ghostR.png";
 ghostP.src = "images/ghostP.png";
 ghostO.src = "images/ghostO.png";
+ghostScared.src = "images/scaredGhost.png";
 food.src = "images/pacmanclosed.png";
 power.src = "images/power.png";
 block.src = "images/block.png"
 
 //draw images
 //ghost (x,y)
-var ghostBx = 11;
-var ghostBy = 15;
-var ghostRx = 11;
-var ghostRy = 13;
-var ghostPx = 16;
-var ghostPy = 13;
-var ghostOx = 16;
-var ghostOy = 15;
+var ghostBx;
+var ghostBy;
+var ghostRx;
+var ghostRy;
+var ghostPx;
+var ghostPy;
+var ghostOx;
+var ghostOy;
+
+//////  0 = blue
+/////   1 = red
+////    2 = pink
+///     3 = orange
+var ghostOut = [1,1,1,1];
+var ghostDirections = [0,0,0,0];
+var cooldown = [500,400,300,200];
 
 //pacman (x,y)
-var x = 13;
-var y = 23
+var x;
+var y;
 
 //pacman animation var
-var anim = 0;
-var moving = 0;
+var anim;
+var moving;
+var antimoving;
+var scared = 0;
 
 //pacman
-var movex = 1;
-var movey = 0;
+var movex;
+var movey;
 
 //score
 var score = 0;
@@ -168,6 +181,7 @@ function eat(map,x,y){
     score += 1;
   }
   else if(map[x][y] == 2){
+    scared = 1000;
     map[x][y] = 0;
   }
 }
@@ -247,9 +261,14 @@ function resetBoard(){
 
   anim = 0;
   moving = 0;
+  antimoving = 0;
 
   movex = 1;
   movey = 0;
+
+  ghostOut = [1,1,1,1];
+  cooldown = [500,400,300,200];
+
 }
 
 function resetScore(){
@@ -280,12 +299,102 @@ function endGame(){
   }
 }
 
+//ghost movement functions
+function findDirections(x,y){
+  return [map[y][x-1],map[y][x+1],map[y-1][x],map[y+1][x]];
+}
+
+function randMove(directions){
+  var possibleMoves = [];
+  for(var i = 0; i < 4; i++){
+    if(directions[i] != -1)
+      possibleMoves.push(i);
+  }
+  //console.log(possibleMoves);
+  return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+}
+
+function ghostMove(color, direction){
+  var tempX = 0;
+  var tempY = 0;
+
+  switch (direction) {
+    case 2: //up
+      tempY = -1;
+      break;
+    case 0: //left
+      tempX = -1;
+      break;
+    case 3: //down
+      tempY = 1;
+      break;
+    case 1: //right
+      tempX = 1;
+      break;
+  }
+
+  if(color == "b"){
+    if(map[ghostBy + tempY][ghostBx + tempX] != -1){
+      ghostBx += tempX;
+      ghostBy += tempY;
+    }
+  }
+  else if(color == "r"){
+    if(map[ghostRy + tempY][ghostRx + tempX] != -1){
+      ghostRx += tempX;
+      ghostRy += tempY;
+    }
+  }
+  else if(color == "o"){
+    if(map[ghostOy + tempY][ghostOx + tempX] != -1){
+      ghostOx += tempX;
+      ghostOy += tempY;
+    }
+  }
+  else if(color == "p"){
+    if(map[ghostPy + tempY][ghostPx + tempX] != -1){
+      ghostPx += tempX;
+      ghostPy += tempY;
+    }
+  }
+}
+
+function ghostEnter(color){
+  if(color == 0){
+    ghostBx = 13;
+    ghostBy = 11;
+  }
+  else if(color == 1){
+    ghostRx = 13;
+    ghostRy = 11;
+  }
+  else if(color == 3){
+    ghostOx = 14;
+    ghostOy = 11;
+  }
+  else if(color == 2){
+    ghostPx = 14;
+    ghostPy = 11;
+  }
+}
+
 function draw(){
     if(!menu){
       context.clearRect(0,0,canvas.width,canvas.height);
       //console.log(movex,movey);
       //draw board
       drawBoard(map);
+
+      //ghost cooldowns
+      for(var i = 0; i < 4; i++){
+        if(cooldown[i] > 0)
+          cooldown[i] = cooldown[i] - 1;
+        if(cooldown[i] == 0){
+          cooldown[i] = cooldown[i] - 1;
+          ghostEnter(i);
+          ghostOut[i] = 0;
+        }
+      }
 
       //movement
       if(map[y+movey][x+movex] == -1){
@@ -299,38 +408,115 @@ function draw(){
         else{x = 1;}
       }
 
-      //movement speed
+      //movement speed and ghost movement
       if(moving == 15){
         moving = -15;
+
         x += movex;
         y += movey;
+
+        //detect player ghost collision
+        if(scared <= 0 && ((x == ghostOx && y == ghostOy) || (x == ghostBx && y == ghostBy) || (x == ghostRx && y == ghostRy) || (x == ghostPx && y == ghostPy)))
+          endGame();
+      }
+
+      //detect eat ghost
+      if(scared > 0){
+        if(ghostRx == x && ghostRy == y){
+          ghostRx = 13;
+          ghostRy = 14;
+          cooldown[1] = 500;
+          //ghostOut[1] = 1;
+          score += 50;
+        }
+        if(ghostBx == x && ghostBy == y){
+          ghostBx = 13;
+          ghostBy = 14;
+          cooldown[0] = 500;
+          //ghostOut[0] = 1;
+          score += 50;
+        }
+        if(ghostPx == x && ghostPy == y){
+          ghostPx = 13;
+          ghostPy = 14;
+          cooldown[2] = 500;
+          //ghostOut[2] = 1;
+          score += 50;
+        }
+        if(ghostOx == x && ghostOy == y){
+          ghostOx = 13;
+          ghostOy = 14;
+          cooldown[3] = 500;
+          //ghostOut[3] = 1;
+          score += 50;
+        }
+      }
+
+      if(antimoving == 15){
+        antimoving = -15;
+        //ghost movement
+        if(ghostOut[1] == 0)
+          ghostMove("r", randMove(findDirections(ghostRx, ghostRy)));
+
+        if(ghostOut[0] == 0)
+          ghostMove("b", randMove(findDirections(ghostBx, ghostBy)));
+
+        if(ghostOut[3] == 0)
+          ghostMove("o", randMove(findDirections(ghostOx, ghostOy)));
+
+        if(ghostOut[2] == 0)
+          ghostMove("p", randMove(findDirections(ghostPx, ghostPy)));
       }
 
       //animation for pacman
       if(anim >= 0 && anim < 15){
         eat(map,y,x);
         context.drawImage(pacman, (x)*30, (y)*30, 30, 30);
+        //console.log(score);
+        if(scared > 0){
+          context.drawImage(ghostScared, ghostBx*30, ghostBy*30, 30, 30);
+          context.drawImage(ghostScared, ghostRx*30, ghostRy*30, 30, 30);
+          context.drawImage(ghostScared, ghostPx*30, ghostPy*30, 30, 30);
+          context.drawImage(ghostScared, ghostOx*30, ghostOy*30, 30, 30);
+          scared = scared - 1;
+        }
+        else{
+          context.drawImage(ghostB, ghostBx*30, ghostBy*30, 30, 30);
+          context.drawImage(ghostR, ghostRx*30, ghostRy*30, 30, 30);
+          context.drawImage(ghostP, ghostPx*30, ghostPy*30, 30, 30);
+          context.drawImage(ghostO, ghostOx*30, ghostOy*30, 30, 30);
+        }
       }
       else{
         context.drawImage(pacmanclosed, (x)*30, (y)*30, 30, 30);
         eat(map,y,x);
         if(anim > 0){
           anim = -15;}
+          //console.log(score);
+          if(scared > 0){
+            context.drawImage(ghostScared, ghostBx*30, ghostBy*30, 30, 30);
+            context.drawImage(ghostScared, ghostRx*30, ghostRy*30, 30, 30);
+            context.drawImage(ghostScared, ghostPx*30, ghostPy*30, 30, 30);
+            context.drawImage(ghostScared, ghostOx*30, ghostOy*30, 30, 30);
+            scared = scared - 1;
+          }
+          else{
+            context.drawImage(ghostB, ghostBx*30, ghostBy*30, 30, 30);
+            context.drawImage(ghostR, ghostRx*30, ghostRy*30, 30, 30);
+            context.drawImage(ghostP, ghostPx*30, ghostPy*30, 30, 30);
+            context.drawImage(ghostO, ghostOx*30, ghostOy*30, 30, 30);
+          }
         }
 
 
-      //console.log(score);
-
-      context.drawImage(ghostB, ghostBx*30, ghostBy*30, 30, 30);
-      context.drawImage(ghostR, ghostRx*30, ghostRy*30, 30, 30);
-      context.drawImage(ghostP, ghostPx*30, ghostPy*30, 30, 30);
-      context.drawImage(ghostO, ghostOx*30, ghostOy*30, 30, 30);
-
-
       moving += 1;
+      antimoving += 1;
       anim += 1;
 
-      console.log(count);
+
+      if(scared <= 0 && ((x == ghostOx && y == ghostOy) || (x == ghostBx && y == ghostBy) || (x == ghostRx && y == ghostRy) || (x == ghostPx && y == ghostPy)))
+        endGame();
+
       if(count <= 0)
         endGame();
 
